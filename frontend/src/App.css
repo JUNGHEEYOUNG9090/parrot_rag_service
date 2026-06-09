@@ -1,0 +1,68 @@
+.chat-container {
+  max-width: 1000px; /* 800px에서 1000px로 확장! */
+  width: 90%; /* 화면이 작아져도 전체의 90%는 차지하도록 설정 */
+  margin: 50px auto;
+  border: 1px solid #ddd;
+  padding: 40px; /* 내부 여백도 살짝 더 줌 */
+  min-height: 700px;
+  border-radius: 40px; /* 더 둥글게 */
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-window {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  flex: 1; /* 남은 공간을 다 차지하도록 */
+  overflow-y: auto;
+  border: 1px solid #eee;
+  margin-bottom: 20px;
+  padding: 20px;
+  border-radius: 20px; /* 대화창도 둥글게 */
+  background-color: #f9f9f9;
+}
+
+.message-bubble {
+  padding: 12px 18px;
+  border-radius: 18px;
+  max-width: 70%;
+  word-wrap: break-word;
+}
+
+.user-message {
+  background-color: #007bff; /* 파란색 */
+  color: white;
+  align-self: flex-end; /* 오른쪽 정렬 */
+  border-bottom-right-radius: 5px;
+}
+
+.bot-message {
+  background-color: #e9ecef; /* 연한 회색 */
+  color: #333;
+  align-self: flex-start; /* 왼쪽 정렬 */
+  border-bottom-left-radius: 5px;
+}
+
+.input-area {
+  display: flex;
+  gap: 10px;
+}
+
+input {
+  flex: 1;
+  padding: 15px;
+  border: 1px solid #ccc;
+  border-radius: 15px; /* 입력창도 둥글게 */
+  outline: none;
+}
+
+button {
+  padding: 0 20px;
+  border-radius: 15px; /* 버튼도 둥글게 */
+  border: none;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+}
