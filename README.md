@@ -1,12 +1,16 @@
 # Parrot RAG Chatbot
 
+## 프로젝트 명
+
+# 앵무새 BOT
+
 앵무새 관련 문서를 기반으로 질문에 답변하는 RAG 챗봇 프로젝트입니다.
 
 세상에 개나 고양이를 위한 프로젝트는 많습니다.
 
 하지만 앵무새를 사랑하는 사람도 있기 마련입니다.
 
-저는 그런 사람들을 위해 Parrot RAG 프로젝트를 기호기하였습니다.
+저는 그런 사람들을 위해 Parrot RAG 프로젝트를 기획하였습니다.
 
 PDF/Markdown 문서를 임베딩해 Supabase에 저장하고, 사용자의 질문이 들어오면 hybrid search로 관련 문서를 검색한 뒤 Groq LLM으로 한국어 답변을 생성합니다. React 프론트엔드는 FastAPI 서버의 스트리밍 응답을 받아 채팅 UI로 보여줍니다.
 
@@ -165,15 +169,19 @@ match_threshold: float = 0.5
 include_metadata: bool = False
 ```
 
+## 랭스미스(LangSmith)를 통한 RAG 모니터링
+
+<img src="./img/랭스미스.png" width="600" />
+
 ## 실행 화면
 
 ### 채팅 UI
 
-<img src="./img/실행화면.PNG" width="400" />
+<img src="./img/실행화면.PNG" width="600" />
 
 ### 검색 품질 평가
 
-<img src="./img/품질평가.PNG" width="400" />
+<img src="./img/품질평가.PNG" width="600" />
 
 ## 주요 트러블슈팅
 

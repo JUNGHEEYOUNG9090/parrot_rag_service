@@ -59,7 +59,7 @@ async def generate_answer_stream(query: str, chat_history: list):
     }
     answer = await chain.ainvoke(inputs)
     
-    # 2. 정보 부족 시 웹 검색 및 스트리밍 분기
+    # 2. 정보 부족 시 웹 검색 및 스트리밍
     if "해당 내용이 없습니다" in answer or len(context_text) < 50:
         print("\n[알림] 내부 정보 부족, 웹 검색을 시작합니다...")
         try:

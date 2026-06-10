@@ -5,7 +5,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from backend.scripts.retriever import retriever_logic # retriever.py를 만들었다고 가정
+from backend.scripts.retriever import retriever_logic 
 
 query = "앵무새가 깃털을 자꾸 뽑는데 원인이 뭐야?"
 

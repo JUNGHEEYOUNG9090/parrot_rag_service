@@ -63,15 +63,12 @@ function App() {
         const { done, value } = await reader.read();
         if (done) break;
 
-        // 스트림 인코딩 처리
         const chunk = decoder.decode(value, { stream: true });
 
         setChatHistory((prev) => {
           const updated = [...prev];
           const lastIndex = updated.length - 1;
-          // 기존 텍스트에 새로운 청크를 더할 때,
-          // 혹시라도 중복되는 데이터가 있는지 확인하거나
-          // 단순히 누적되도록 확실하게 보장합니다.
+          // 중복되는 데이터가 있는지 확인
           updated[lastIndex] = {
             ...updated[lastIndex],
             text: updated[lastIndex].text + chunk,

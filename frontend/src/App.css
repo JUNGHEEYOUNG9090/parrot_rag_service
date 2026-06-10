@@ -1,11 +1,11 @@
 .chat-container {
-  max-width: 1000px; /* 800px에서 1000px로 확장! */
-  width: 90%; /* 화면이 작아져도 전체의 90%는 차지하도록 설정 */
+  max-width: 1000px;
+  width: 90%;
   margin: 50px auto;
   border: 1px solid #ddd;
-  padding: 40px; /* 내부 여백도 살짝 더 줌 */
+  padding: 40px;
   min-height: 700px;
-  border-radius: 40px; /* 더 둥글게 */
+  border-radius: 40px;
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
@@ -20,7 +20,7 @@
   border: 1px solid #eee;
   margin-bottom: 20px;
   padding: 20px;
-  border-radius: 20px; /* 대화창도 둥글게 */
+  border-radius: 20px;
   background-color: #f9f9f9;
 }
 
@@ -32,16 +32,16 @@
 }
 
 .user-message {
-  background-color: #007bff; /* 파란색 */
+  background-color: #007bff;
   color: white;
-  align-self: flex-end; /* 오른쪽 정렬 */
+  align-self: flex-end;
   border-bottom-right-radius: 5px;
 }
 
 .bot-message {
-  background-color: #e9ecef; /* 연한 회색 */
+  background-color: #e9ecef;
   color: #333;
-  align-self: flex-start; /* 왼쪽 정렬 */
+  align-self: flex-start;
   border-bottom-left-radius: 5px;
 
   padding: 10px;
@@ -63,13 +63,13 @@ input {
   flex: 1;
   padding: 15px;
   border: 1px solid #ccc;
-  border-radius: 15px; /* 입력창도 둥글게 */
+  border-radius: 15px;
   outline: none;
 }
 
 button {
   padding: 0 20px;
-  border-radius: 15px; /* 버튼도 둥글게 */
+  border-radius: 15px;
   border: none;
   background-color: #007bff;
   color: white;
