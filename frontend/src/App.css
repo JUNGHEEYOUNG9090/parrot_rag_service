@@ -43,6 +43,15 @@
   color: #333;
   align-self: flex-start; /* 왼쪽 정렬 */
   border-bottom-left-radius: 5px;
+
+  padding: 10px;
+  line-height: 1.5;
+  white-space: pre-wrap; /* 줄바꿈 기호(\n) 반영 */
+  word-wrap: break-word; /* 단어가 길면 강제로 줄바꿈 */
+  word-break: break-all; /* 너무 긴 단어도 강제로 줄바꿈 */
+  max-width: 80%; /* 채팅창이 화면 끝까지 안 가고 적당히 끊기게 */
+  display: block; /* 추가: flex 컨테이너 안에서 블록 요소로 강제 */
+  width: fit-content; /* 추가: 내용물만큼만 너비를 가짐 */
 }
 
 .input-area {

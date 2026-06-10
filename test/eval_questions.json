@@ -1,0 +1,42 @@
+[
+  {
+    "question": "앵무새가 심심하지 않게 먹이를 찾으며 놀게 하려면 어떻게 해야 해?",
+    "expected_files": ["bird_Foraging_and_Play.md", "fun_food.md"]
+  },
+  {
+    "question": "앵무새를 씨앗 위주 식단에서 펠렛으로 바꾸는 방법은?",
+    "expected_files": ["switching_Seeds_to_Pellets.md", "bird_Food_Guide.md"]
+  },
+  {
+    "question": "앵무새가 깃털을 자꾸 뽑는 원인은 뭐야?",
+    "expected_files": ["bird_behavior_guide.md", "bird_Health.md"]
+  },
+  {
+    "question": "새장에 다시 들어가도록 훈련하려면 어떻게 해야 해?",
+    "expected_files": ["tips_Back_In_Cage.md", "learn_Train.md"]
+  },
+  {
+    "question": "앵무새에게 신문지를 활용해서 놀잇감을 만들어줘도 돼?",
+    "expected_files": ["4_Great_Newspaper.md"]
+  },
+  {
+    "question": "앵무새 목욕은 어떻게 시키는 게 좋아?",
+    "expected_files": ["bird_Baths.md"]
+  },
+  {
+    "question": "앵무새 체중 관리는 왜 중요하고 어떻게 확인해?",
+    "expected_files": ["weight.md", "5_Health_Choice.md"]
+  },
+  {
+    "question": "앵무새에게 오메가 지방산이 왜 필요해?",
+    "expected_files": ["balance_omega_Fatty_Acids.md", "avian_Nutrition.md"]
+  },
+  {
+    "question": "앵무새가 예 아니오로 의사소통하도록 가르칠 수 있어?",
+    "expected_files": ["yes_or_no.md", "bird_Teaching.md"]
+  },
+  {
+    "question": "이사할 때 앵무새 스트레스를 줄이는 방법은?",
+    "expected_files": ["moving_home.md"]
+  }
+]

@@ -1,29 +1,45 @@
-import { useState, useRef, KeyboardEvent } from "react";
+import { useEffect, useState, useRef, KeyboardEvent } from "react";
 
 interface ChatMessage {
   type: "user" | "bot";
   text: string;
 }
 
+const renderMessageText = (text: string) => {
+  return text.split(/(\*\*[^*]+\*\*)/g).map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={index}>{part.slice(2, -2)}</strong>;
+    }
+
+    return part;
+  });
+};
+
 function App() {
   const [question, setQuestion] = useState<string>("");
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatHistory]);
 
   // 1. 엔터 키 처리를 위한 함수
   const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") handleSend();
+    if (e.key === "Enter" && !isLoading) handleSend();
   };
 
   // 2. 스트리밍 지원하는 전송 함수
   const handleSend = async () => {
-    if (!question.trim()) return;
+    if (!question.trim() || isLoading) return;
 
     const userQuestion = question;
     const newHistory: ChatMessage[] = [
       ...chatHistory,
       { type: "user", text: userQuestion },
     ];
+    setIsLoading(true);
     setChatHistory(newHistory);
     setQuestion("");
     setChatHistory((prev) => [...prev, { type: "bot", text: "" }]);
@@ -34,7 +50,7 @@ function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           question: userQuestion,
-          chat_history: chatHistory,
+          chat_history: newHistory,
         }),
       });
 
@@ -68,19 +84,35 @@ function App() {
         ...prev.slice(0, -1),
         { type: "bot", text: "서버 연결 오류!" },
       ]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="flex flex-col h-screen max-w-4xl mx-auto p-4 bg-gray-50">
-      <h1 className="text-2xl font-bold text-center mb-6">🦜 앵무새-BOT</h1>
+      <div className="mb-6 flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold">🦜 앵무새-BOT</h1>
+        <button
+          className="rounded-full border border-gray-300 px-4 py-2 text-sm text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={isLoading || chatHistory.length === 0}
+          onClick={() => setChatHistory([])}
+        >
+          새 대화
+        </button>
+      </div>
       <div className="flex-1 overflow-y-auto space-y-4 p-4 bg-white rounded-3xl shadow-lg">
         {chatHistory.map((chat, i) => (
           <div
             key={i}
-            className={`p-4 rounded-2xl max-w-[80%] ${chat.type === "user" ? "bg-blue-500 text-white self-end ml-auto" : "bg-gray-200"}`}
+            className={`w-fit p-4 rounded-2xl max-w-[80%] whitespace-pre-wrap break-words ${chat.type === "user" ? "bg-blue-500 text-white self-end ml-auto" : "bg-gray-200"}`}
           >
-            {chat.text}
+            {renderMessageText(
+              chat.text ||
+                (isLoading && i === chatHistory.length - 1
+                  ? "답변 생성 중..."
+                  : ""),
+            )}
           </div>
         ))}
         <div ref={bottomRef} />
@@ -88,17 +120,19 @@ function App() {
 
       <div className="mt-4 flex gap-2">
         <input
-          className="flex-1 p-4 rounded-full border border-gray-300 outline-none"
+          className="flex-1 p-4 rounded-full border border-gray-300 outline-none disabled:bg-gray-100"
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
           onKeyDown={handleKeyPress} // 여기서 연결!
           placeholder="질문을 입력하세요..."
+          disabled={isLoading}
         />
         <button
-          className="px-6 py-4 bg-blue-600 text-white rounded-full"
+          className="px-6 py-4 bg-blue-600 text-white rounded-full transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
           onClick={handleSend}
+          disabled={isLoading || !question.trim()}
         >
-          전송
+          {isLoading ? "생성 중" : "전송"}
         </button>
       </div>
     </div>

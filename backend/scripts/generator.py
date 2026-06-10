@@ -17,15 +17,24 @@ tavily = TavilyClient(api_key=os.environ.get("TAVILY_API_KEY"))
 # 2. 질문에 답변하기 위한 프롬프트 템플릿
 template = """
 당신은 앵무새를 사랑하는 다정한 전문가입니다. 
-사용자의 질문에 대해 아래 '문맥'을 참고하여 대화하듯 답변하세요.
+아래 '문맥'을 활용하여 사용자의 질문에 다정하게 대화하듯 답변하세요.
 
 규칙:
-1. 사용자의 질문이 이전 대화와 연결된다면, 그 맥락을 충분히 반영하세요.
-2. 정보만 딱딱하게 나열하지 말고, 사용자의 상황을 먼저 공감하고 다정하게 조언하세요.
-3. 제공된 문맥에서 답을 찾기 어렵다면, 솔직하게 모르겠다고 말하거나 검색 결과를 정중히 요약하세요.
-4. 답변은 반드시 완벽한 '한국어' 문장으로만 작성하세요. 
-5. 한자, 일본어, 베트남어 등 한국어가 아닌 문자는 절대 포함하지 마세요.
-6. 이전에 생성한 내용을 반복하지 말고, 간결하고 명확하게 답변하세요.
+1. '문맥'에 포함된 정보는 답변의 절대적 근거입니다. 반드시 이를 우선하여 사용하세요.
+2. 이전 대화 맥락을 파악하여 질문의 의도를 정확히 이해하고 대화하세요.
+3. 딱딱한 정보 나열보다는 사용자의 상황에 공감하는 다정한 어조로 답변하세요.
+4. '문맥'에서 답을 찾을 수 없거나 관련 없는 질문이라면, 모르는 척하지 말고 솔직하게 "해당 내용은 제 정보에 없습니다"라고 말하세요.
+5. 오직 한국어로만 작성하세요. 한자, 영어, 일본어 등 다른 언어는 절대 포함하지 마세요.
+6. 이전에 했던 말을 그대로 반복하지 말고, 질문에 직접적인 해결책을 명확히 제시하세요.
+7. 정보를 나열할 때는 반드시 항목별로 줄바꿈(`\n`)을 하고 불렛 포인트(-)를 사용하세요.
+8. 각 문단 사이에는 반드시 빈 줄을 하나씩 넣어 가독성을 높이세요.
+9. 핵심 키워드는 **굵게** 처리하여 강조하세요.
+
+[출력 규칙 - 반드시 지킬 것]
+1. 답변은 절대로 한 문단으로 작성하지 마세요. 
+2. 반드시 주제별로 2~3문장씩 끊어서 '엔터(줄바꿈)'를 두 번씩 치세요.
+3. 중요한 내용은 불렛 포인트(-)를 사용하여 리스트 형태로 출력하세요.
+4. 모든 문단 사이에는 빈 줄을 하나씩 반드시 포함하세요.
 
 문맥: {context}
 이전 대화 맥락: {history}
@@ -37,7 +46,8 @@ prompt = ChatPromptTemplate.from_template(template)
 @traceable(name="generator_logic", project_name="parrot_rag")
 async def generate_answer_stream(query: str, chat_history: list):
     history_text = "\n".join([f"{msg['type']}: {msg['text']}" for msg in chat_history[-3:]])
-    context_docs = retriever_logic(query)
+    retrieval_query = f"{history_text}\n현재 질문: {query}" if history_text else query
+    context_docs = retriever_logic(retrieval_query)
     unique_context = list(set(context_docs))
     context_text = "\n".join(unique_context)
     
@@ -59,17 +69,17 @@ async def generate_answer_stream(query: str, chat_history: list):
             # 웹 검색 결과는 LLM을 통해 스트리밍으로 출력
             final_prompt = f"다음 웹 정보를 바탕으로 질문에 답하세요: {web_context}\n\n질문: {query}"
             async for chunk in llm.astream(final_prompt):
-                filter_chunk = re.sub(r'[^가-힣a-zA-Z0-9\s.,!?]', '', chunk)
+                filter_chunk = re.sub(r'[^가-힣a-zA-Z0-9\s.,!?\n*\-()]', '', chunk)
                 if filter_chunk:
                     yield filter_chunk
                 
         except Exception as e:
-            yield "죄송합니다. 현재 외부 정보 검색 기능을 사용할 수 없습니다."
+            yield "죄송합니다. 정보를 찾을 수가 없습니다."
             
     else:
         # 기존 답변이 있는 경우도 스트리밍으로 출력
         async for chunk in chain.astream(inputs):
-            filter_chunk = re.sub(r'[^가-힣a-zA-Z0-9\s.,!?]', '', chunk)
+            filter_chunk = re.sub(r'[^가-힣a-zA-Z0-9\s.,!?\n*\-()]', '', chunk)
             if filter_chunk:
                 yield filter_chunk
                 

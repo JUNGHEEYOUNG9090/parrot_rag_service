@@ -2,7 +2,6 @@ import os
 from dotenv import load_dotenv
 from supabase.client import create_client
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_core.runnables import RunnableLambda
 from langsmith import traceable
 
 # 상위 폴더의 .env 경로 지정
@@ -20,17 +19,34 @@ embeddings = HuggingFaceEmbeddings(model_name="BAAI/bge-m3")
 
 # 데코레이터 
 @traceable(name="retriever_logic", project_name="parrot_rag")
-def retriever_logic(query: str):
+def retriever_logic(
+    query: str,
+    match_count: int = 3,
+    match_threshold: float = 0.5,
+    include_metadata: bool = False,
+):
     print(f"디버그: 쿼리 실행 중 -> {query}")
     query_embedding = embeddings.embed_query(query)
     
-    response = supabase.rpc("match_documents", {
-        "match_count": 3,
-        "match_threshold": 0.1, 
+    response = supabase.rpc("hybrid_search", {
+        "query_text":query,
+        "match_count": match_count,
+        "match_threshold": match_threshold, 
         "query_embedding": query_embedding
     }).execute()
-    
-    result = [row['content'] for row in response.data]
+
+    if include_metadata:
+        result = [
+            {
+                "content": row.get("content", ""),
+                "file_name": row.get("metadata", {}).get("file_name", "unknown"),
+                "score": row.get("similarity") or row.get("score") or row.get("rank"),
+            }
+            for row in response.data
+        ]
+    else:
+        result = [row['content'] for row in response.data]
+
     print(f"디버그: 검색된 데이터 개수 -> {len(result)}")
     return result
 
