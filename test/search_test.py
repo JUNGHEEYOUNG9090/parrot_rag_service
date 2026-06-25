@@ -1,11 +1,16 @@
 # test/search_test.py
 import sys
 from pathlib import Path
+from dotenv import load_dotenv
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
+# .env 파일 로드
+load_dotenv(dotenv_path=PROJECT_ROOT / ".env")
+
 from backend.scripts.retriever import retriever_logic 
+
 
 query = "앵무새가 깃털을 자꾸 뽑는데 원인이 뭐야?"
 

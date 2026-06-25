@@ -4,9 +4,12 @@ import argparse
 import json
 import sys
 from pathlib import Path
+import os
+from dotenv import load_dotenv
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
+
 
 from backend.scripts.retriever import retriever_logic
 
@@ -27,17 +30,25 @@ def hit_at_k(retrieved_files, expected_files, k: int) -> bool:
 
 
 def main():
+    # .env 파일 로드
+    load_dotenv(dotenv_path=PROJECT_ROOT / ".env", override=True)
+
+    os.environ["IS_TESTING"] = "true"
     parser = argparse.ArgumentParser(description="Evaluate retriever Recall@k.")
     parser.add_argument(
         "--eval-file",
-        default="test/eval_questions.json",
+        default=PROJECT_ROOT / "test" / "eval_questions.json",
         help="Path to evaluation question JSON.",
     )
     parser.add_argument("--match-count", type=int, default=3)
     parser.add_argument("--threshold", type=float, default=0.5)
+    parser.add_argument("--limit", type=int, default=None, help="Number of questions to test.")
     args = parser.parse_args()
 
     cases = load_eval_cases(Path(args.eval_file))
+    if args.limit:
+        cases = cases[:args.limit]
+
     total = len(cases)
     recall_1_hits = 0
     recall_k_hits = 0
@@ -76,6 +87,13 @@ def main():
                 }
             )
 
+    if failures:
+        print("\n=== Failures ===")
+        for failure in failures:
+            print(f"- question: {failure['question']}")
+            print(f"  expected: {', '.join(failure['expected_files'])}")
+            print(f"  retrieved: {', '.join(failure['retrieved_files']) or '(none)'}")
+
     print("\n=== Summary ===")
     print(f"Total: {total}")
     print(f"Recall@1: {recall_1_hits / total:.2%} ({recall_1_hits}/{total})")
@@ -83,13 +101,6 @@ def main():
         f"Recall@{args.match_count}: "
         f"{recall_k_hits / total:.2%} ({recall_k_hits}/{total})"
     )
-
-    if failures:
-        print("\n=== Failures ===")
-        for failure in failures:
-            print(f"- question: {failure['question']}")
-            print(f"  expected: {', '.join(failure['expected_files'])}")
-            print(f"  retrieved: {', '.join(failure['retrieved_files']) or '(none)'}")
 
 
 if __name__ == "__main__":
