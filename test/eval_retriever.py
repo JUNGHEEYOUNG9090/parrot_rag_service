@@ -1,15 +1,17 @@
-## 검색품질평가기
-
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
-import os
+
 from dotenv import load_dotenv
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
+load_dotenv(dotenv_path=PROJECT_ROOT / ".env", override=True)
+os.environ["IS_TESTING"] = "true"
 
 from backend.scripts.retriever import retriever_logic
 
@@ -30,10 +32,6 @@ def hit_at_k(retrieved_files, expected_files, k: int) -> bool:
 
 
 def main():
-    # .env 파일 로드
-    load_dotenv(dotenv_path=PROJECT_ROOT / ".env", override=True)
-
-    os.environ["IS_TESTING"] = "true"
     parser = argparse.ArgumentParser(description="Evaluate retriever Recall@k.")
     parser.add_argument(
         "--eval-file",
@@ -47,7 +45,7 @@ def main():
 
     cases = load_eval_cases(Path(args.eval_file))
     if args.limit:
-        cases = cases[:args.limit]
+        cases = cases[: args.limit]
 
     total = len(cases)
     recall_1_hits = 0
@@ -63,10 +61,7 @@ def main():
             match_threshold=args.threshold,
             include_metadata=True,
         )
-        retrieved_files = [
-            normalize_file_name(doc["file_name"])
-            for doc in docs
-        ]
+        retrieved_files = [normalize_file_name(doc["file_name"]) for doc in docs]
 
         recall_1 = hit_at_k(retrieved_files, expected_files, 1)
         recall_k = hit_at_k(retrieved_files, expected_files, args.match_count)

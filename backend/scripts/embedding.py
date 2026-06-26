@@ -23,7 +23,9 @@ headers_to_split_on = [
 markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on, strip_headers=False)
 
 # 4. 문서 처리 및 임베딩
-folder_path = "backend/data/processed"
+# 수정 후 (코드 파일의 위치를 기준으로 절대 경로 생성)
+current_dir = os.path.dirname(os.path.abspath(__file__)) # scripts 폴더 위치
+folder_path = os.path.abspath(os.path.join(current_dir, "..", "..", "backend", "data", "processed"))
 total_chunks = 0
 for filename in os.listdir(folder_path):
     if filename.endswith(".md"):
