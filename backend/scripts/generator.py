@@ -42,6 +42,24 @@ template = """
 """
 prompt = ChatPromptTemplate.from_template(template)
 
+async def run_web_search_and_stream(query: str):
+    print("\n[알림] 내부 정보 부족, 웹 검색을 시작합니다...")
+    try:
+        search_result = tavily.search(query=query, search_depth="advanced")
+        web_context = "\n".join([r['content'] for r in search_result['results']])
+        
+        # 웹 검색 결과는 LLM을 통해 스트리밍으로 출력
+        final_prompt = f"다음 웹 정보를 바탕으로 질문에 답하세요: {web_context}\n\n질문: {query}"
+        async for chunk in llm.astream(final_prompt):
+            filter_chunk = re.sub(r'[^가-힣a-zA-Z0-9\s.,!?\n*\-()]', '', chunk)
+            if filter_chunk:
+                yield filter_chunk
+            
+    except Exception as e:
+        print(f"[오류] Tavily 검색 또는 LLM 스트리밍 실패: {e}")
+        yield "죄송합니다. 정보를 찾을 수가 없습니다."
+
+
 # 3. 답변 생성 함수 (LangSmith 추적 가능)
 @traceable(name="generator_logic", project_name="parrot_rag")
 async def generate_answer_stream(query: str, chat_history: list):
@@ -51,37 +69,65 @@ async def generate_answer_stream(query: str, chat_history: list):
     unique_context = list(set(context_docs))
     context_text = "\n".join(unique_context)
     
+    # 1. 문서 컨텍스트가 너무 짧으면 즉시 웹 검색 수행
+    if len(context_text) < 50:
+        async for chunk in run_web_search_and_stream(query):
+            yield chunk
+        return
+        
     chain = prompt | llm | StrOutputParser()
     inputs = {
         "context": context_text, 
         "history": history_text, 
         "question": query
     }
-    answer = await chain.ainvoke(inputs)
     
-    # 2. 정보 부족 시 웹 검색 및 스트리밍
-    if "해당 내용이 없습니다" in answer or len(context_text) < 50:
-        print("\n[알림] 내부 정보 부족, 웹 검색을 시작합니다...")
-        try:
-            search_result = tavily.search(query=query, search_depth="advanced")
-            web_context = "\n".join([r['content'] for r in search_result['results']])
-            
-            # 웹 검색 결과는 LLM을 통해 스트리밍으로 출력
-            final_prompt = f"다음 웹 정보를 바탕으로 질문에 답하세요: {web_context}\n\n질문: {query}"
-            async for chunk in llm.astream(final_prompt):
-                filter_chunk = re.sub(r'[^가-힣a-zA-Z0-9\s.,!?\n*\-()]', '', chunk)
-                if filter_chunk:
-                    yield filter_chunk
-                
-        except Exception as e:
-            yield "죄송합니다. 정보를 찾을 수가 없습니다."
-            
-    else:
-        # 기존 답변이 있는 경우도 스트리밍으로 출력
+    buffer = ""
+    buffer_flushed = False
+    trigger_web_search = False
+    
+    # 거부 답변 키워드 정의
+    negation_keywords = [
+        "해당 내용은 제 정보에 없습니다", 
+        "제 정보에 없습니다", 
+        "해당 내용이 없습니다", 
+        "해당 정보는 없습니다", 
+        "제 지식에 없습니다",
+        "제 정보에는 없습니다"
+    ]
+    max_buffer_len = 80
+    
+    try:
         async for chunk in chain.astream(inputs):
             filter_chunk = re.sub(r'[^가-힣a-zA-Z0-9\s.,!?\n*\-()]', '', chunk)
-            if filter_chunk:
+            if not filter_chunk:
+                continue
+                
+            if not buffer_flushed:
+                buffer += filter_chunk
+                # 거부 키워드가 포함되었는지 확인
+                if any(kw in buffer for kw in negation_keywords):
+                    trigger_web_search = True
+                    break
+                
+                # 버퍼 크기가 채워지면 방출
+                if len(buffer) >= max_buffer_len:
+                    yield buffer
+                    buffer = ""
+                    buffer_flushed = True
+            else:
                 yield filter_chunk
+    except Exception as e:
+        print(f"[오류] 스트리밍 중 에러 발생: {e}")
+        trigger_web_search = True
+        
+    if trigger_web_search:
+        async for chunk in run_web_search_and_stream(query):
+            yield chunk
+    else:
+        # 루프가 정상적으로 끝났으나 아직 방출되지 않은 버퍼가 있으면 방출
+        if buffer:
+            yield buffer
                 
 # 4. 실행
 if __name__ == "__main__":None

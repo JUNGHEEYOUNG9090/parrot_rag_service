@@ -2,6 +2,7 @@ import argparse
 import json
 import os
 import sys
+import time
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -11,7 +12,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 load_dotenv(dotenv_path=PROJECT_ROOT / ".env", override=True)
-os.environ["IS_TESTING"] = "true"
+os.environ["IS_TESTING"] = "false"
 
 from backend.scripts.retriever import retriever_logic
 
@@ -81,6 +82,10 @@ def main():
                     "retrieved_files": retrieved_files,
                 }
             )
+
+        # Groq API의 분당 속도 제한(RPM/TPM)을 준수하기 위해 평가 요청 간에 짧은 대기 시간을 둡니다.
+        # 특히 HyDE 검증 시 유용합니다.
+        time.sleep(1.5)
 
     if failures:
         print("\n=== Failures ===")
