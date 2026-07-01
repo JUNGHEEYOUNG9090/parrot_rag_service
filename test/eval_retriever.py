@@ -5,14 +5,10 @@ import sys
 import time
 from pathlib import Path
 
-from dotenv import load_dotenv
-
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-load_dotenv(dotenv_path=PROJECT_ROOT / ".env", override=True)
-os.environ["IS_TESTING"] = "false"
+os.environ["IS_TESTING"] = "true"
 
 from backend.scripts.retriever import retriever_logic
 
@@ -27,21 +23,18 @@ def normalize_file_name(file_name: str) -> str:
 
 
 def hit_at_k(retrieved_files, expected_files, k: int) -> bool:
-    top_k = set(retrieved_files[:k])
-    expected = set(expected_files)
-    return bool(top_k & expected)
+    return bool(set(retrieved_files[:k]) & set(expected_files))
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Evaluate retriever Recall@k.")
+    parser = argparse.ArgumentParser()
     parser.add_argument(
         "--eval-file",
         default=PROJECT_ROOT / "test" / "eval_questions.json",
-        help="Path to evaluation question JSON.",
     )
     parser.add_argument("--match-count", type=int, default=3)
     parser.add_argument("--threshold", type=float, default=0.5)
-    parser.add_argument("--limit", type=int, default=None, help="Number of questions to test.")
+    parser.add_argument("--limit", type=int, default=None)
     args = parser.parse_args()
 
     cases = load_eval_cases(Path(args.eval_file))
@@ -49,58 +42,57 @@ def main():
         cases = cases[: args.limit]
 
     total = len(cases)
-    recall_1_hits = 0
-    recall_k_hits = 0
+    recall_1 = 0
+    recall_k = 0
     failures = []
 
-    for index, case in enumerate(cases, start=1):
-        question = case["question"]
-        expected_files = [normalize_file_name(name) for name in case["expected_files"]]
+    for i, case in enumerate(cases, 1):
+        q = case["question"]
+        expected = [normalize_file_name(x) for x in case["expected_files"]]
+
         docs = retriever_logic(
-            question,
+            q,
             match_count=args.match_count,
             match_threshold=args.threshold,
             include_metadata=True,
         )
-        retrieved_files = [normalize_file_name(doc["file_name"]) for doc in docs]
 
-        recall_1 = hit_at_k(retrieved_files, expected_files, 1)
-        recall_k = hit_at_k(retrieved_files, expected_files, args.match_count)
-        recall_1_hits += int(recall_1)
-        recall_k_hits += int(recall_k)
+        retrieved = [normalize_file_name(d["file_name"]) for d in docs]
 
-        status = "PASS" if recall_k else "FAIL"
-        print(f"\n[{index}/{total}] {status} {question}")
-        print(f"expected: {', '.join(expected_files)}")
-        print(f"retrieved: {', '.join(retrieved_files) or '(none)'}")
+        r1 = hit_at_k(retrieved, expected, 1)
+        rk = hit_at_k(retrieved, expected, args.match_count)
 
-        if not recall_k:
+        recall_1 += int(r1)
+        recall_k += int(rk)
+
+        status = "PASS" if rk else "FAIL"
+
+        print(f"\n[{i}/{total}] {status} {q}")
+        print(f"expected: {', '.join(expected)}")
+        print(f"retrieved: {', '.join(retrieved) or '(none)'}")
+
+        if not rk:
             failures.append(
                 {
-                    "question": question,
-                    "expected_files": expected_files,
-                    "retrieved_files": retrieved_files,
+                    "question": q,
+                    "expected_files": expected,
+                    "retrieved_files": retrieved,
                 }
             )
 
-        # Groq API의 분당 속도 제한(RPM/TPM)을 준수하기 위해 평가 요청 간에 짧은 대기 시간을 둡니다.
-        # 특히 HyDE 검증 시 유용합니다.
         time.sleep(1.5)
 
     if failures:
         print("\n=== Failures ===")
-        for failure in failures:
-            print(f"- question: {failure['question']}")
-            print(f"  expected: {', '.join(failure['expected_files'])}")
-            print(f"  retrieved: {', '.join(failure['retrieved_files']) or '(none)'}")
+        for f in failures:
+            print(f"- question: {f['question']}")
+            print(f"  expected: {', '.join(f['expected_files'])}")
+            print(f"  retrieved: {', '.join(f['retrieved_files'])}")
 
     print("\n=== Summary ===")
     print(f"Total: {total}")
-    print(f"Recall@1: {recall_1_hits / total:.2%} ({recall_1_hits}/{total})")
-    print(
-        f"Recall@{args.match_count}: "
-        f"{recall_k_hits / total:.2%} ({recall_k_hits}/{total})"
-    )
+    print(f"Recall@1: {recall_1 / total:.2%} ({recall_1}/{total})")
+    print(f"Recall@{args.match_count}: {recall_k / total:.2%} ({recall_k}/{total})")
 
 
 if __name__ == "__main__":
